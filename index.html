@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滤镜通</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            display: flex;
+            min-height: 100vh;
+            background: linear-gradient(
+                135deg,
+                #667eea,
+                #764ba2,
+                #ff6b6b,
+                #4ecdc4
+            );
+            background-size: 400% 400%;
+            animation: gradientFlow 15s ease infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes gradientFlow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 20px 15px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            height: 100vh; /* 设置高度为视口高度 */
+            overflow-y: auto; /* 启用垂直滚动 */
+            scrollbar-width: thin;
+            scrollbar-color: #45b8e6 rgba(0,0,0,0.1); /* Firefox备用颜色 */
+        }
+        
+        /* Webkit定制滚动条 */
+        .sidebar::-webkit-scrollbar {
+            width: 12px; 
+            background: rgba(0,0,0,0.1); /* 轨道背景 */
+            border-radius: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: linear-gradient(
+                to bottom, 
+                #8a2be2, 
+                #6e6cde,
+                #ff6b6b
+            );
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 
+                0 0 15px rgba(138,43,226,0.5),
+                inset 0 0 8px rgba(255,255,255,0.3);
+            position: relative;
+            transition: background 0.3s;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(
+                to bottom, 
+                #ff6b6b, 
+                #8a2be2,
+                #6e6cde
+            );
+        }
+        
+        /* 流动光效 */
+        .sidebar::-webkit-scrollbar-thumb::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 60%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0.4),
+                transparent
+            );
+            animation: scrollFlow 3s infinite;
+        }
+        
+        @keyframes scrollFlow {
+            from { top: -100%; }
+            to { top: 140%; }
+        }
+
+
+.intensity-controls {
+    position: relative;
+    margin: 0 15px 10px 15px;
+    background: rgba(255, 255, 255, 0.1); /* 修改为更柔和的白色背景 */
+    border-radius: 20px; /* 增加圆角 */
+    padding: 20px; /* 增加内边距 */
+    backdrop-filter: blur(15px); /* 增加模糊效果 */
+    box-shadow: 0 12px 30px rgba(115, 170, 247, 0.5); /* 增加阴影效果 */
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    z-index: 100;
+    background: linear-gradient(135deg, #75c1f1, #7bdbfe); /* 修改为更柔和的彩色渐变背景 */
+    background: rgba(132, 196, 228, 0.6); /* 保持半透明效果 */
+}
+
+.intensity-slider {
+    width: 100%;
+    height: 15px; /* 修改高度 */
+    background: linear-gradient(135deg, #ff00ff, #00ffff, #ff00ff); /* 修改为彩色渐变背景 */
+    border-radius: 10px; /* 修改圆角 */
+    outline: none;
+    -webkit-appearance: none;
+    transition: background 0.3s; /* 添加过渡效果 */
+}
+
+.intensity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; /* 修改宽度 */
+    height: 20px; /* 修改高度 */
+    background: white; /* 修改滑块颜色为白色 */
+    border-radius: 50%; /* 圆形滑块 */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s; /* 添加过渡效果 */
+    box-shadow: 0 6px 16px rgba(255, 0, 105, 0.6); /* 修改阴影效果 */
+}
+
+.intensity-slider::-moz-range-thumb {
+    width: 20px; /* 修改宽度 */
+    height: 20px; /* 修改高度 */
+    background: white; /* 修改滑块颜色为白色 */
+    border-radius: 50%; /* 圆形滑块 */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s; /* 添加过渡效果 */
+    box-shadow: 0 6px 16px rgba(255, 0, 105, 0.6); /* 修改阴影效果 */
+}
+
+.intensity-slider::-ms-thumb {
+    width: 20px; /* 修改宽度 */
+    height: 20px; /* 修改高度 */
+    background: white; /* 修改滑块颜色为白色 */
+    border-radius: 50%; /* 圆形滑块 */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s; /* 添加过渡效果 */
+    box-shadow: 0 6px 16px rgba(255, 0, 105, 0.6); /* 修改阴影效果 */
+}
+
+.intensity-slider::-ms-fill-lower {
+    background: rgba(255, 255, 255, 0.1); /* 修改背景颜色 */
+    border-radius: 10px; /* 修改圆角 */
+}
+
+.intensity-slider::-ms-fill-upper {
+    background: rgba(255, 255, 255, 0.1); /* 修改背景颜色 */
+    border-radius: 10px; /* 修改圆角 */
+}
+
+        .intensity-value {
+            color: white;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .title {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 2.4rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            margin-bottom: 25px;
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 15px 35px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 1.1rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .custom-file-upload:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .preview-container {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            border-radius: 12px;
+            object-fit: contain;
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .style-buttons-container {
+            flex: 1;
+            overflow-y: auto; /* 启用垂直滚动 */
+            overflow-x: hidden; /* 禁用水平滚动 */
+            scrollbar-width: thin;
+            scrollbar-color: #45b8e6 rgba(0,0,0,0.1); /* Firefox备用颜色 */
+        }
+
+        .style-buttons-container::-webkit-scrollbar {
+            width: 12px; 
+            background: rgba(0,0,0,0.1); /* 轨道背景 */
+            border-radius: 8px;
+        }
+        
+        .style-buttons-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(
+                to bottom, 
+                #8a2be2, 
+                #6e6cde,
+                #ff6b6b
+            );
+            border-radius: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 
+                0 0 15px rgba(138,43,226,0.5),
+                inset 0 0 8px rgba(255,255,255,0.3);
+            position: relative;
+            transition: background 0.3s;
+        }
+        
+        .style-buttons-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(
+                to bottom, 
+                #ff6b6b, 
+                #8a2be2,
+                #6e6cde
+            );
+        }
+        
+        .style-button {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #FF6B6B, #6B6BFF);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: visible; /* 确保内容可见 */
+            box-shadow: 0 4px 15px rgba(107,107,255,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            margin: 40px 0; /* 间隔 */
+            height: auto; /* 自动高度 */
+            line-height: normal; /* 正常行高 */
+            display: flex; /* 使用 flex 布局 */
+            align-items: center; /* 垂直居中 */
+            justify-content: center; /* 水平居中 */
+            white-space: nowrap; /* 防止内容换行 */
+        }
+
+        .style-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .style-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(107,107,255,0.5);
+        }
+
+        .style-button:hover::after {
+            left: 100%;
+        }
+
+        .style-button.active {
+            background: linear-gradient(145deg, #8A2BE2, #4B0082);
+            border-color: rgba(255,255,255,0.5);
+            box-shadow: 0 0 20px rgba(138,43,226,0.4);
+            animation: buttonPulse 2s infinite;
+        }
+
+        /* 修改“原始风格”按钮的颜色 */
+        .style-button[data-value="original"] {
+            background: linear-gradient(135deg, #87CEEB, #B0E0E6); /* 天蓝色 */
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 4px 15px rgba(0,191,255,0.3);
+        }
+
+        /* 统一按钮样式 */
+        .style-button, #saveButton {
+            padding: 16px 45px; 
+            background: linear-gradient(135deg, #FF6B6B, #6B6BFF);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(107,107,255,0.3);
+            margin: 5px 0;
+        }
+
+        .style-button::after, #saveButton::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .style-button:hover, #saveButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(107,107,255,0.5);
+        }
+
+        .style-button:hover::after, #saveButton:hover::after {
+            left: 100%;
+        }
+
+        /* 调整保存按钮位置 */
+        #saveButton {
+            margin-top: 20px;
+        }
+
+        @keyframes glow {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 40px; }
+        }
+
+        @keyframes buttonPulse {
+            0% { box-shadow: 0 0 0 0 rgba(138,43,226,0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(138,43,226,0); }
+            100% { box-shadow: 0 0 0 0 rgba(138,43,226,0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.6; }
+        }
+
+        /* 视频控制样式 */
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            padding: 12px 15px;
+            border-radius: 0 0 12px 12px;
+            display: none; /* 初始隐藏 */
+        }
+
+        .control-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .play-pause-btn, 
+        .mute-btn,
+        .fullscreen-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .play-pause-btn:hover,
+        .mute-btn:hover,
+        .fullscreen-btn:hover {
+            opacity: 0.8;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: #6e6cde;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .time-display {
+            color: rgba(255,255,255,0.9);
+            font-size: 12px;
+            min-width: 90px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 15px;
+                border-right: none;
+                border-bottom: 1px solid rgba(255,255,255,0.2);
+            }
+            .style-button, #saveButton {
+                width: calc(50% - 4px);
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            .title {
+                font-size: 2rem;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .style-button, #saveButton {
+                width: 100%;
+                justify-content: center;
+            }
+            /* 移动端视频控制优化 */
+            .video-controls {
+                padding: 8px;
+            }
+            .control-bar button {
+                padding: 8px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="intensity-controls">
+            <input type="range" class="intensity-slider" min="0" max="2" step="0.1" value="1">
+            <div class="intensity-value">强度: 100%</div>
+        </div>
+        <div class="style-buttons-container">
+            <div class="style-button active" data-value="original">原始风格</div>
+            <div class="style-button" data-value="ccd">CCD模式</div>
+            <div class="style-button" data-value="leica">徕卡风格</div>
+            <div class="style-button" data-value="aesthetic">唯美滤镜</div>
+            <div class="style-button" data-value="retro">复古效果</div>
+            <div class="style-button" data-value="blackAndWhite">黑白质感</div>
+            <div class="style-button" data-value="vintage">怀旧风格</div>
+            <div class="style-button" data-value="coldTone">冷色调</div>
+            <div class="style-button" data-value="warmTone">暖色调</div>
+            <div class="style-button" data-value="hdr">HDR增强</div>
+            
+            
+            <div class="style-button" data-value="cyberpunk">赛博朋克</div>
+            <div class="style-button" data-value="moody">情绪暗调</div>
+            <div class="style-button" data-value="morandi">莫兰迪色</div>
+            <div class="style-button" data-value="japanese">日系印象</div>
+            <div class="style-button" data-value="ins">INS风</div>
+            <div class="style-button" data-value="film">胶片模拟</div>
+            <div class="style-button" data-value="lofi">Lo-Fi颗粒</div>
+            <div class="style-button" data-value="neon">霓虹之夜</div>
+            <div class="style-button" data-value="dramatic">戏剧光影</div>
+            <div class="style-button" data-value="silver">银盐质感</div>
+            <div class="style-button" data-value="negative">负片冲印</div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <h1 class="title">滤镜通</h1>
+
+        <div class="upload-section">
+            <label class="custom-file-upload" for="mediaUpload">
+                <span>点击上传图片或视频</span>
+                <input type="file" id="mediaUpload" accept="image/*,video/*" hidden>
+            </label>
+        </div>
+
+        <div class="preview-container">
+            <canvas id="renderCanvas"></canvas>
+            <video id="sourceVideo" hidden></video>
+            <div class="video-controls">
+                <div class="control-bar">
+                    <button class="play-pause-btn">▶</button>
+                    <div class="progress-bar">
+                        <div class="progress"></div>
+                    </div>
+                    <span class="time-display">00:00 / 00:00</span>
+                    <button class="mute-btn">🔊</button>
+                    <button class="fullscreen-btn">⛶</button>
+                </div>
+            </div>
+        </div>
+
+        <button id="saveButton">保存作品</button>
+    </main>
+
+    <script>
+        let mediaType = 'image';
+        let sourceElement = null;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        
+        const canvas = document.getElementById('renderCanvas');
+        const video = document.getElementById('sourceVideo');
+        const ctx = canvas.getContext('2d');
+
+        // 初始化Canvas尺寸
+        function initCanvasSize() {
+            canvas.width = window.innerWidth > 768 ? 800 : 400;
+            canvas.height = window.innerWidth > 768 ? 600 : 300;
+        }
+        initCanvasSize();
+        window.addEventListener('resize', initCanvasSize);
+
+        // 文件处理
+        document.getElementById('mediaUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            URL.revokeObjectURL(video.src);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (file.type.startsWith('image/')) {
+                handleImageUpload(file);
+            } else if (file.type.startsWith('video/')) {
+                handleVideoUpload(file);
+            }
+        });
+
+        function handleImageUpload(file) {
+            mediaType = 'image';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                sourceElement = new Image();
+                sourceElement.onload = () => {
+                    updateCanvasSize(sourceElement.width, sourceElement.height);
+                    drawFrame();
+                    document.querySelector('.video-controls').style.display = 'none'; // 隐藏控制条
+                };
+                sourceElement.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleVideoUpload(file) {
+            mediaType = 'video';
+            video.hidden = true;
+            video.src = URL.createObjectURL(file);
+            video.controls = false;
+
+            video.addEventListener('loadedmetadata', () => {
+                updateCanvasSize(video.videoWidth, video.videoHeight);
+                video.play();
+                startVideoRendering();
+                document.querySelector('.video-controls').style.display = 'block'; // 显示控制条
+            });
+        }
+
+        // 更新画布尺寸
+        function updateCanvasSize(width, height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        // 视频渲染循环
+        function startVideoRendering() {
+            function render() {
+                if (!video.paused && !video.ended) {
+                    drawFrame();
+                    requestAnimationFrame(render);
+                }
+            }
+            render();
+        }
+
+        // 绘制帧
+        function drawFrame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (mediaType === 'image') {
+                ctx.drawImage(sourceElement, 0, 0);
+            } else {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // 滤镜预设
+        const filterPresets = {
+            ccd: 'contrast(1.2) saturate(1.2) brightness(1.1)',
+            leica: 'sepia(0.2) contrast(1.2) brightness(1.1) hue-rotate(-10deg) saturate(1.3)',
+            aesthetic: 'blur(2px) saturate(1.5) brightness(1.2)',
+            retro: 'sepia(0.6) contrast(1.1) brightness(0.9)',
+            blackAndWhite: 'grayscale(100%)',
+            vintage: 'sepia(0.3) contrast(1.2) brightness(0.9)',
+            coldTone: 'hue-rotate(30deg) saturate(1.2)',
+            warmTone: 'sepia(0.3) contrast(1.1) brightness(1.1)',
+            hdr: 'contrast(1.5) saturate(1.5)',
+            cyberpunk: 'hue-rotate(-30deg) contrast(1.4) saturate(1.8)',
+            moody: 'brightness(0.8) contrast(1.4) grayscale(30%)',
+            morandi: 'saturate(0.6) brightness(1.1) contrast(0.9)',
+            japanese: 'brightness(1.15) contrast(0.95) hue-rotate(350deg) saturate(0.85)',
+            ins: 'sepia(0.15) brightness(1.1) contrast(1.05) saturate(1.2)',
+            film: 'contrast(1.1) saturate(1.3) grayscale(20%)',
+            lofi: 'contrast(1.5) saturate(0.8) grayscale(50%)',
+            neon: 'saturate(2.5) hue-rotate(90deg) contrast(1.3)',
+            dramatic: 'contrast(1.8) brightness(0.9)',
+            silver: 'contrast(1.6) grayscale(100%) brightness(0.95)',
+            negative: 'invert(100%) contrast(1.2)',
+            original: 'none',
+            
+        };
+
+        let filterIntensity = 1.0;
+        const intensitySlider = document.querySelector('.intensity-slider');
+        const intensityValue = document.querySelector('.intensity-value');
+        
+        // 应用滤镜（带强度调整）
+        function applyStyle(style) {
+            let filter = filterPresets[style] || 'none';
+            if (style !== 'original') {
+                // 动态调整滤镜强度
+                filter = filter.replace(/(\d+\.?\d*)(?=\)| |%|$)/g, (match) => {
+                    return (parseFloat(match) * filterIntensity).toFixed(2);
+                });
+            }
+            ctx.filter = filter;
+            drawFrame();
+        }
+
+        // 滑动条事件监听
+        intensitySlider.addEventListener('input', (e) => {
+            filterIntensity = parseFloat(e.target.value);
+            intensityValue.textContent = `强度: ${Math.round(filterIntensity * 100)}%`;
+            const activeStyle = document.querySelector('.style-button.active').dataset.value;
+            applyStyle(activeStyle);
+            
+            // 实时更新预览
+            if(mediaType === 'video' && !video.paused) {
+                drawFrame();
+            }
+        });
+
+        // 切换滤镜时重置强度
+        document.querySelectorAll('.style-button').forEach(button => {
+            button.addEventListener('click', function() {
+                if(this.dataset.value !== 'original') {
+                    intensitySlider.value = 1;
+                    filterIntensity = 1.0;
+                    intensityValue.textContent = '强度: 100%';
+                }
+            });
+        });
+
+        // 保存处理
+        document.getElementById('saveButton').addEventListener('click', async () => {
+            if (mediaType === 'image') {
+                saveImage();
+            } else {
+                await recordVideo();
+            }
+        });
+
+        function saveImage() {
+            const link = document.createElement('a');
+            link.download = `filterx-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        async function recordVideo() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') return;
+
+            // 重置状态
+            recordedChunks = [];
+            mediaRecorder = null;
+            
+            // 初始化视频设置
+            video.autoplay = true;
+            video.playsInline = true;
+            video.muted = true;
+            video.currentTime = 0;
+
+            // 确保视频开始播放
+            await new Promise(resolve => {
+                video.addEventListener('canplaythrough', resolve, { once: true });
+                video.play().catch(error => console.error('视频播放失败:', error));
+            });
+
+            // 创建媒体录制器
+            const stream = canvas.captureStream(30);
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 2500000
+            });
+
+            // 收集录制数据
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            // 完成录制处理
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `filterx-${Date.now()}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // 清理资源
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            // 开始录制
+            mediaRecorder.start();
+
+            // 创建时间同步器
+            const startTime = Date.now();
+            const videoDuration = video.duration * 1000;
+            
+            // 实时更新录制进度
+            const progressChecker = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                if (elapsed >= videoDuration || video.ended) {
+                    clearInterval(progressChecker);
+                    if (mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                    }
+                }
+            }, 100);
+
+            // 异常处理
+            video.addEventListener('error', () => {
+                clearInterval(progressChecker);
+                if (mediaRecorder?.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            });
+
+            // 自动停止保护
+            setTimeout(() => {
+                if (mediaRecorder?.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }, videoDuration + 2000);
+        }
+
+        // 样式选择器
+        document.querySelectorAll('.style-button').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.style-button').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                const style = this.dataset.value;
+                
+                // 显示/隐藏强度控制条
+                const intensityControls = document.querySelector('.intensity-controls');
+                intensityControls.style.display = style === 'original' ? 'none' : 'block';
+                
+                // 重置滑动条位置
+                if(style !== 'original') {
+                    intensitySlider.value = 1;
+                    filterIntensity = 1.0;
+                    intensityValue.textContent = '强度: 100%';
+                }
+                
+                applyStyle(style);
+                if ('vibrate' in navigator) navigator.vibrate(20);
+            });
+        });
+
+        // 视频控制功能
+        const playPauseBtn = document.querySelector('.play-pause-btn');
+        const muteBtn = document.querySelector('.mute-btn');
+        const fullscreenBtn = document.querySelector('.fullscreen-btn');
+        const progressBar = document.querySelector('.progress-bar');
+        const progress = document.querySelector('.progress');
+        const timeDisplay = document.querySelector('.time-display');
+
+        // 播放/暂停控制
+        playPauseBtn.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+                playPauseBtn.textContent = '⏸';
+            } else {
+                video.pause();
+                playPauseBtn.textContent = '▶';
+            }
+        });
+
+        // 静音控制
+        muteBtn.addEventListener('click', () => {
+            video.muted = !video.muted;
+            muteBtn.textContent = video.muted ? '🔇' : '🔊';
+        });
+
+        // 进度条拖拽
+        let isDragging = false;
+        progressBar.addEventListener('mousedown', startDrag);
+        progressBar.addEventListener('mousemove', drag);
+        progressBar.addEventListener('mouseup', endDrag);
+        progressBar.addEventListener('touchstart', startDrag);
+        progressBar.addEventListener('touchmove', drag);
+        progressBar.addEventListener('touchend', endDrag);
+
+        function startDrag(e) {
+            isDragging = true;
+            handleDrag(e);
+        }
+
+        function drag(e) {
+            if (isDragging) handleDrag(e);
+        }
+
+        function endDrag() {
+            isDragging = false;
+        }
+
+        function handleDrag(e) {
+            const rect = progressBar.getBoundingClientRect();
+            const pos = (e.clientX || e.touches[0].clientX) - rect.left;
+            const percent = Math.min(Math.max(pos / rect.width, 0), 1);
+            progress.style.width = percent * 100 + '%';
+            video.currentTime = percent * video.duration;
+        }
+
+        // 更新时间显示
+        function updateTime() {
+            const current = formatTime(video.currentTime);
+            const duration = formatTime(video.duration);
+            timeDisplay.textContent = `${current} / ${duration}`;
+            progress.style.width = (video.currentTime / video.duration) * 100 + '%';
+        }
+
+        function formatTime(seconds) {
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        video.addEventListener('timeupdate', updateTime);
+        video.addEventListener('loadedmetadata', updateTime);
+
+        // 全屏功能
+        fullscreenBtn.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else {
+                canvas.requestFullscreen().catch(err => {
+                    console.error('全屏请求失败:', err);
+                });
+            }
+        });
+
+        // 移动端优化
+        let lastTouch = 0;
+        document.querySelectorAll('.style-button').forEach(button => {
+            button.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (Date.now() - lastTouch < 300) return;
+                lastTouch = Date.now();
+                button.click();
+            }, { passive: false });
+        });
+    </script>
+</body>
+</html>
